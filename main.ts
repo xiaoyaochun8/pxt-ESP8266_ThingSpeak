@@ -32,6 +32,56 @@ namespace ESP8266ThingSpeak {
         }
         return result
     }
+    function waitWifiResponse(): boolean {
+        let serial_str: string = ""
+        let result: boolean = false
+        let time: number = input.runningTime()
+        while (true) {
+            serial_str += serial.readString()
+            if (serial_str.length > 200) serial_str = serial_str.substr(serial_str.length - 200)
+            if (serial_str.includes("OK") || serial_str.includes("ALREADY CONNECTED")) {
+                result = true
+                break
+            } else if (serial_str.includes("ERROR") || serial_str.includes("SEND FAIL")) {
+                break
+            }
+            if (input.runningTime() - time > 30000) break
+        }
+        return result
+    }
+    function waitServerResponse(): boolean {
+        let serial_str: string = ""
+        let result: boolean = false
+        let time: number = input.runningTime()
+        while (true) {
+            serial_str += serial.readString()
+            if (serial_str.length > 200) serial_str = serial_str.substr(serial_str.length - 200)
+            if (serial_str.includes("OK") || serial_str.includes("ALREADY CONNECTED")) {
+                result = true
+                break
+            } else if (serial_str.includes("ERROR") || serial_str.includes("SEND FAIL")) {
+                break
+            }
+            if (input.runningTime() - time > 30000) break
+        }
+        return result
+    }
+    function waitDataResponse(): boolean {
+        let serial_str: string = ""
+        let result: boolean = false
+        let time: number = input.runningTime()
+        while (true) {
+            serial_str += serial.readString()
+            if (serial_str.includes("OK") || serial_str.includes("ALREADY CONNECTED")) {
+                result = true
+                break
+            } else if (serial_str.includes("ERROR") || serial_str.includes("SEND FAIL")) {
+                break
+            }
+            if (input.runningTime() - time > 30000) break
+        }
+        return result
+    }
 
     /**
     * Initialize ESP8266 module and connect it to Wifi router
@@ -75,6 +125,22 @@ namespace ESP8266ThingSpeak {
                 sendAT("AT+CIPSEND=" + (str.length + 2))
                 sendAT(str, 0) // upload data
                 last_upload_successful = waitResponse()
+                basic.pause(100)
+            }
+        }
+    }
+    export function connectServer(ip: string, data: string) {
+        if (wifi_connected && data != "") {
+            thingspeak_connected = false
+            sendAT("AT+CIPSTART=\"TCP\",\"" + ip + "\",80", 0) // connect to website server
+            thingspeak_connected = waitServerResponse()
+            basic.pause(100)
+            if (thingspeak_connected) {
+                last_upload_successful = false
+                let str: string = data
+                sendAT("AT+CIPSEND=" + (str.length + 2))
+                sendAT(str, 0) // upload data
+                last_upload_successful = waitDataResponse()
                 basic.pause(100)
             }
         }
